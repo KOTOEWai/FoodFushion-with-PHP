@@ -51,7 +51,7 @@ if(isset($_POST['register'])){
 
 
 <body>
-<P>toewai</P>
+<P>toewaluni</P>
 <div class="container register-container">
         <div class="card shadow-sm">
             <div class="card-body">

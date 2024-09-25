@@ -1,11 +1,11 @@
 
 <?php  
-session_start();
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ?>
-
-
-
 <?php
 
 include('./db.php');
@@ -62,125 +62,95 @@ if (isset($_POST['login'])) {
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <!------ Include the above in your HEAD tag ---------->
 <link href="./css/style.css" rel="stylesheet">
+<link href="css/font-awesome.min.css" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
+<!-- Custom styles for this template -->
+
+<!-- responsive style -->
+<link href="css/responsive.css" rel="stylesheet" />
 
 </head>
+<style>
 
-<body class="bg-dark">
+.primary-color {
+    background-color: #FF6F61;
+    color: white;
+}
+.secondary-color {
+    background-color: #28A745;
+    color: white;
+}
+.accent-color {
+    color: #FFC107;
+}
+.text-dark {
+    color: #252c33;
+}
+.bg-light-gray {
+    background-color: #F8F9FA;
+}
+.sliver{
+  background-color: #FF5733;
+}
+
+  /* Custom Modal Styles */
+.custom-modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding-top: 60px;
+}
+.custom-modal-content {
+  background-color: #fff;
+  margin: 5% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.custom-close {
+  color: #e62323;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.custom-close:hover,
+.custom-close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+
+
+
+/* Custom Color Palette */
+
+
+</style>
+
+
+<body class="">
   <?php   
    if(isset($_POST['logout'])){
     session_destroy();
-    header("location:login.php");
+    header("location: index.php");
    }
 ?>
 
-<nav class="navbar navbar-expand-lg  navbar-dark bg-dark ">
-        <a class="navbar-brand" href="index.php">
-            <img src="./upload/image/food.png" width="70" height="70" class="d-inline-block align-top rounded-5" alt="FoodFusion">
-           <p class="d-inline-block mt-3 font-weight-bold">FoodFusion</p> 
-        </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto pt-5 pb-5">
-                <li class="nav-item">
-                    <a class="nav-link text-white " href="index.php">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="about.php">Culinary Resources</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="recipe.php">Recipe Collection</a>
-                </li>
-                <li class="nav-item">
-               <a class="nav-link text-white" href="community_cookbook.php">Community Cookbook</a>
-                    <!-- Button trigger modal -->
-
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="resources.php">Contact Us</a>
-                </li>
-              
-            </ul>
-
-        
-          <form method='post'>
-            <ul class="navbar-nav">
-                <!-- Login Button -->
-               
-          
-
-            <?php
-if (!isset($_SESSION['user_array'])) {
-    ?>
-    <li class="nav-item">
-        <button class="btn btn-outline-primary">
-            
-            <a class="btn " id="signUpBtn" data-toggle="modal" data-target="#signUpModal">Login</a>
-        </button>
-    </li>
-    <?php 
-} 
-?>
-
-<div id="signUpModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="signUpModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
 
 
-    <h5 class="modal-title" id="signUpModalLabel">login</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-            <form action="login.php" method="post">
-
-                    
-                        <i class=" text-danger"><?php echo $error; ?></i>
-                 
-                <div class="form-group">
-                    <label for="useremail">Email:</label>
-                    <input type="email" placeholder="Enter Email:" name="email" class="form-control" value="<?php echo htmlspecialchars($email ?? ''); ?>">
-                  
-                        <div class="text-danger"><?php echo $errorEmail; ?></div>
-                  
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" class="form-control" id="password" name="password">
-                  
-                        <div class="text-danger"><?php echo $errorPassword; ?></div>
-                </div>
-      
-                <button type="submit" value="Login" name="login" class="btn btn-primary btn-block">Login</button>
-            </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 
-<?php
-if (isset($_SESSION['user_array'])) {
-    ?>
-   <li class="nav-item">
-                <button type="submit" value="Logout" name="logout"  class="btn btn-outline-primary" onclick="return confirm('Are you sure to logout?');"">LogOut</button>
-    </li>
-    <?php 
-} 
-?>
-               
-                <!-- Sign Up Button -->
-            </ul>
-            </form>
-        </div>
-    </nav>
 
 
 

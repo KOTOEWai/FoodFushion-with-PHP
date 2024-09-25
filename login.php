@@ -78,8 +78,11 @@ if (isset($_POST['login'])) {
       
                 <button type="submit" value="Login" name="login" class="btn btn-primary btn-block">Login</button>
             </form>
+
             <p class="mt-3 text-center">Don't have an account? <a href="register.php">Register</a></p>
         </div>
+
+        
     </div>
 </div>
 
