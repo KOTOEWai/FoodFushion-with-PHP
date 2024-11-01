@@ -66,43 +66,8 @@ if (isset($_POST['update'])) {
     }
 }
 ?>
-<div class="container-fluid ">
 
-<nav class="navbar navbar-expand-lg  bg-dark ">
-          <a class="navbar-brand" href="index.php">
-            <span>
-              Feane
-            </span>
-          </a>
 
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class=""> </span>
-          </button>
-
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav  mx-auto ">
-              <li class="nav-item ">
-                <a class="nav-link text-white " href="index.php">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link  text-white " href="">Culinary Rescources</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white " href="recipe.php">Recipe Collection</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white " href="community_cookbook.php">Community Cookbook</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white " href="">Contact Us</a>
-              </li>
-              
-             
-            </ul>
-         
-          </div>
-        </nav>
-      </div>
 
     <div class="container-fluid col-lg-5 col-md-5  col-sm-5  mb-5 mt-5">
         <h2>Edit Profile</h2>

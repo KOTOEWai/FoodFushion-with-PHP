@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 include('./header.php');
 
@@ -8,11 +9,10 @@ $dietary_preferences = isset($_POST['dietary_preferences']) ? mysqli_real_escape
 $difficulty_level = isset($_POST['difficulty_level']) ? mysqli_real_escape_string($conn, $_POST['difficulty_level']) : '';
 
 // Modify the query based on search inputs
-$query = "SELECT re.*, u.first_name, u.last_name
+$query = "SELECT re.*, u.first_name, u.last_name , u.image as user_image
           FROM recipes re
           JOIN users u ON re.user_id = u.user_id
           WHERE 1"; // Always true condition to append search filters
-
 if (!empty($cuisine_type)) {
     $query .= " AND re.cuisine_type LIKE '%$cuisine_type%'";
 }
@@ -37,75 +37,77 @@ if (!$result) {
 ?>
 
 <?php
-
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-  if (isset($_POST['recipe_id'])) {
-      // Get the logged-in user's ID
-      $user_id = $_SESSION['user_array']['user_id'];  // Ensure the user is logged in
-      $recipe_id = mysqli_real_escape_string($conn, $_POST['recipe_id']);
+    // Get the logged-in user's ID
+    $user_id = isset($_SESSION['user_array']) ? $_SESSION['user_array']['user_id'] : 0; // Ensure the user is logged in
 
-      // Check if the recipe is already favorited by this user
-      $query = "SELECT * FROM save WHERE user_id = '$user_id' AND recipe_id = '$recipe_id'";
-      $result = mysqli_query($conn, $query);
+    // Check if the request is for saving or sharing
+    if (isset($_POST['recipe_id'])) {
+        $recipe_id = mysqli_real_escape_string($conn, $_POST['recipe_id']);
 
-      if (mysqli_num_rows($result) == 0) {
-          // Insert into the favorites table
-          $query = "INSERT INTO save (user_id, recipe_id) VALUES ('$user_id', '$recipe_id')";
-          if (mysqli_query($conn, $query)) {
-              $message = "Recipe saved as favorite!";
-          } else {
-              $message = "Failed to save the recipe: " . mysqli_error($conn);
-          }
-      } else {
-          $message = "!Oh, Sorry , This recipe is already saved. ";
-      }
+        // Check if the recipe is already saved by this user
+        $saveQuery = "
+        SELECT * 
+        FROM save 
+        WHERE user_id = '$user_id' AND recipe_id = '$recipe_id'
+        ";
 
-      // Optional: Redirect back to the same page with a message
-      header("Location: recipe.php?message=" . urlencode($message));
-      exit();
-  }
+        $saveResult = mysqli_query($conn, $saveQuery);
+
+        if (mysqli_num_rows($saveResult) == 0) {
+            // Insert into the save table
+            $insertSaveQuery = "INSERT INTO save (user_id, recipe_id) VALUES ('$user_id', '$recipe_id')";
+            if (mysqli_query($conn, $insertSaveQuery)) {
+                $message = "Recipe saved as favorite!";
+            } else {
+                $message = "Failed to save the recipe: " . mysqli_error($conn);
+            }
+        } else {
+            $message = "!Oh, Sorry, This recipe is already saved.";
+        }
+        // Redirect back to the same page with a message
+        header("Location: recipe.php?message=" . urlencode($message));
+        exit();
+    }
+
+    if (isset($_POST['save_id'])) {
+        $recipe_id = mysqli_real_escape_string($conn, $_POST['save_id']);
+
+        // Check if the recipe is already shared by this user
+        $shareQuery = "
+        SELECT * 
+        FROM shares 
+        WHERE user_id = '$user_id' AND recipe_id = '$recipe_id'
+        ";
+
+        $shareResult = mysqli_query($conn, $shareQuery);
+
+        if (mysqli_num_rows($shareResult) == 0) {
+            // Insert into the shares table
+            $insertShareQuery = "INSERT INTO shares (user_id, recipe_id) VALUES ('$user_id', '$recipe_id')";
+            if (mysqli_query($conn, $insertShareQuery)) {
+                // Use JavaScript to show the alert and redirect after a delay
+                echo '<script type="text/javascript">';
+                echo 'alert("You shared the recipe!");';
+                echo 'setTimeout(function() { window.location.href = "community_cookbook.php"; }, 3000);'; // 3-second delay before redirect
+                echo '</script>';
+            } else {
+                echo "Failed to share the recipe: " . mysqli_error($conn);
+            }
+        } else {
+            // Show a message that the recipe is already shared
+            echo '<script type="text/javascript">';
+            echo 'alert("Oh, sorry! This recipe is already shared.");';
+            echo 'setTimeout(function() { window.location.href = "recipe.php"; }, 3000);'; // 3-second delay before redirect
+            echo '</script>';
+        }
+    }
 }
 ?>
 
 
 <!-- Navbar Section -->
-<div class="container-fluid sticky-top">
-    <nav class="navbar navbar-expand-lg bg-dark">
-        <a class="navbar-brand" href="index.php">
-            <span>Feane</span>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
 
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mx-auto">
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="index.php">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="#">Culinary Resources</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="recipe.php">Recipe Collection</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="community_cookbook.php">Community Cookbook</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="#">Contact Us</a>
-                </li>
-            </ul>
-
-            <?php if (isset($_SESSION['user_array'])) { ?>
-                <button type="button" class="btn" onclick="location.href='viewProfile.php?view_id=<?php echo $_SESSION['user_array']['user_id'] ?>'">
-                    <img src="./upload/<?php echo $_SESSION['user_array']['image']; ?>" width="80" height="80" class="rounded-circle pe-auto" alt="profile">
-                </button>
-            <?php } ?>
-        </div>
-    </nav>
-</div>
 <?php if (isset($_GET['message'])): ?>
     <?php
     $message = $_GET['message'];
@@ -119,17 +121,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 <?php endif; ?>
 
-<h1 class="text-center mt-2">Find Recipes</h1>
+<h1 class="text-center ">Find Recipes</h1>
 <!-- Search Form -->
 <div class="container mt-4">
-    <form method="POST" action="recipe.php" class="row mb-4">
-        <div class="col-md-3">
+    <form method="POST" action="recipe.php" class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
             <input type="text" name="cuisine_type" class="form-control" placeholder="Search by Cuisine" value="<?php echo htmlspecialchars($cuisine_type); ?>">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 col-sm-6">
             <input type="text" name="dietary_preferences" class="form-control" placeholder="Search by Dietary Preferences" value="<?php echo htmlspecialchars($dietary_preferences); ?>">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 col-sm-6">
             <select name="difficulty_level" class="form-control">
                 <option value="">Select Difficulty</option>
                 <option value="Easy" <?php if ($difficulty_level == 'Easy') echo 'selected'; ?>>Easy</option>
@@ -137,45 +139,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <option value="Hard" <?php if ($difficulty_level == 'Hard') echo 'selected'; ?>>Hard</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <button type="submit" class="btn btn-primary">Search</button>
+        <div class="col-md-3 col-sm-6">
+            <button type="submit" class="btn btn-primary w-75">Search</button>
         </div>
     </form>
 </div>
+
 
 <?php if (mysqli_num_rows($result) > 0): ?>
     <div class="container mt-4">
         <div class="row">
             <?php while ($recipe = mysqli_fetch_assoc($result)): ?>
-                <div class="col-md-3 col-sm-5 mb-4">
-                    <div class="card h-80 w-100 shadow-sm">
-                        <div class="position-relative">
-                 <form method="POST" action="recipe.php">
-                <input type="hidden" name="recipe_id" value="<?php echo $recipe['recipe_id']; ?>">
-                <button type="submit" class=" position-absolute top-0 end-0 border-0 bg-body ">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="red" class="bi bi-heart-fill" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314"/>
-                    </svg>
-                </button>
+                <div class="col-lg-4 col-md-4 col-sm-5 mb-4 ">
+                    <div class="card h-80 w-100 shadow-sm bg-light">
+                    <div class="card-header bg-light-subtle d-flex align-items-center justify-content-start py-3">
+                    <p class="text-muted mb-0">
+                            Created by: <strong><?php echo htmlspecialchars($recipe['first_name'] . ' ' . $recipe['last_name']); ?></strong>
+                        </p>
+                    <img src="./upload/<?php echo  $recipe['user_image']  ?>" class="rounded-circle ms-1  user-image " alt="User profile image">
+              <div class="">
+                    <form id="recipeForm<?php echo $recipe['recipe_id']; ?>" method="POST" action="recipe.php" class="">
+    <input type="hidden" name="recipe_id" value="<?php echo $recipe['recipe_id']; ?>">
+    <?php
+if (isset($_SESSION['user_array'])) {
+    ?>
+    <button type="submit" class="btn heart-button rounded-circle bg-danger m-3" style="border: none; background: ; position: absolute; top: 0; right: 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" class="bi  bi-heart" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314"/>
+        </svg>
+        <?php
+}
+        ?>
+    </button>
+</form>
+</div>
+                    </div>
+                    <div class="">
+ 
+    <a href="Eachrecipe.php?recipe_id=<?php echo $recipe['recipe_id']; ?>">
+        <img src="./upload/<?php echo $recipe['image']; ?>" class="card-img-top img-fluid" alt="Recipe Image" style="height: 180px; object-fit: cover;">
+    </a>
+</div>
 
-                            <a href="Eachrecipe.php?recipe_id=<?php echo $recipe['recipe_id']; ?>">
-                                <img src="./upload/<?php echo $recipe['image']; ?>" class="card-img-top img-fluid" alt="Recipe Image" style="height: 180px; object-fit: cover;">
-                            </a>
-                        </div>
                         <div class="card-body bg-light-subtle">
                             <h5 class="card-title"><?php echo $recipe['title']; ?></h5>
                         </div>
                         <div class=" text-center mb-4">
-                         
-                         
-
-  
-  
  
-<div class="warpper">
-    <button class="btn" type="button" data-bs-toggle="modal" data-bs-target="#recipeModal<?php echo $recipe['recipe_id']; ?>"><i class="animation"></i>Read More<i class="animation"></i>
+<div class="warpper d-flex justify-content-between ms-3">
+    <button class="btn ms-1" type="button" data-bs-toggle="modal" data-bs-target="#recipeModal<?php echo $recipe['recipe_id']; ?>"><i class="animation"></i>Read More<i class="animation"></i>
     </button>
+ 
+    <?php
+
+if (isset($_SESSION['user_array'])) {
+    ?>    
+<form  method="POST" action="recipe.php" class="">
+    <input type="hidden" name="save_id" value="<?php echo $recipe['recipe_id']; ?>">
+  <button type="submit" class="btn btn-outline-success ms-5 ">
+     <i class="fas fa-share"></i> Share
+</button>
+
+</form>
+<?php
+}?>
 </div>
+
+
                         </div>
                     </div>
                 </div>
@@ -211,7 +241,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         <form method="POST" action="recipe.php">
         <input type="hidden" name="recipe_id" value="<?php echo $recipe['recipe_id']; ?>">
-         
+     
+    <?php
+
+if (isset($_SESSION['user_array'])) {
+    ?>    
 
  <button type="submit" class="bookmarkBtn">
   <span class="IconContainer">
@@ -221,9 +255,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       ></path>
     </svg>
   </span>
+
   <p class="text pt-3">Save</p>
 </button>
-
+<?php }?>
 
 </form>
       </div>
@@ -241,35 +276,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <?php endif; ?>
 
 <?php include('./footer.php'); ?>
-
+<?php
+ob_end_flush(); // Send the output buffer and stop buffering
+?>
 <style>
     /* From Uiverse.io by mi-series */ 
-    
+ .heart-button {
+    position: relative;
+    overflow: hidden; /* Hide the overflowing part of the animation */
+}
+
+.heart-button svg {
+    transition: transform 0.3s ease; /* Smooth transition for the scaling effect */
+}
+.heart-button {
+    width: 45px;
+    height: 40px;
+}
+
+.heart-button:active svg {
+    transform: scale(1.2); /* Scale the SVG up to 1.2 times its size when clicked */
+}
+
 .warpper .btn {
   outline: 0;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  background: orange;
-  min-width: 200px;
+  background: #33ebd2;
+  min-width: 100px;
   border: 0;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
   box-sizing: border-box;
   padding: 10px 15px;
-  color: #fff;
-  font-size: 16px;
+  color: black;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 1.2px;
-  text-transform: uppercase;
   overflow: hidden;
   cursor: pointer;
+  margin-right: 2rem;
 }
 
 .warpper  .btn:hover {
-  opacity: .95;
+  opacity: .85;
 }
+.user-image {
+    width: 40px;  /* Adjust this value to make the image smaller */
+    height: 40px; 
 
+}
 .warpper .btn .animation {
   border-radius: 100%;
   animation: ripple 0.6s linear infinite;
@@ -344,5 +401,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   transform: scale(0.95);
   transition-duration: 0.3s;
 }
-
 </style>

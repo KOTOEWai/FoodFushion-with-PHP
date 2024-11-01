@@ -1,0 +1,496 @@
+shovel
+mittens 
+
+<?php
+
+
+session_start(); 
+include('./db.php');
+
+if (!isset($_SESSION['user_array'])) {
+  echo '<script type="text/javascript">';
+  echo 'alert("Oops! You need to log in to access this page. Redirecting to the homepage...");';
+  echo 'setTimeout(function(){ window.location.href = "index.php"; }, 1500);'; // 3-second delay before redirect
+  echo '</script>';
+    exit();
+
+    
+}
+
+
+
+include('./header.php'); 
+// Include this after session checks and redirections
+
+?>
+<?php
+if(isset($_POST['submit'])){
+  $image =$_FILES['image'];
+  $title=trim($_POST['title']);
+  $ingredients=trim($_POST['ingredients']);
+  $steps= trim($_POST['steps']);
+  $cuisine =trim($_POST['cuisine']);
+  $dietary=trim($_POST['dietary']);
+  $level=$_POST['level'];
+  $id = $_SESSION['user_array']['user_id'];
+
+  $imgName=$image['name'];
+  $imgTmp=$image['tmp_name'];
+  $imgSize=$image['size'];
+  $imgError=$image['error'];
+   $allow =['jpg','png','jpeg'];
+
+   $fileEx=strtolower(pathinfo($imgName,PATHINFO_EXTENSION));
+   if(in_array($fileEx,$allow)){
+       if($imgError===0){
+           if($imgSize<=1000000){
+               $newfilename = uniqid('',true).'.'.$fileEx;
+               $filename="upload/".basename($newfilename);
+               if(move_uploaded_file($imgTmp,$filename)){
+                $insertQuery="INSERT INTO community_recipes(image,title,ingredients,steps,cuisine_type,dietary_preferences,difficulty_level,user_id) 
+                VALUES ('$newfilename','$title','$ingredients','$steps','$cuisine','$dietary','$level','$id')";
+                $res= mysqli_query($conn,$insertQuery);
+         if($res==true){
+            echo '<script type="text/javascript">';
+            echo 'alert("Succcessfully Created");';
+            echo '</script>';
+         }else{
+         die('Error:'.mysqli_error($conn));
+         }
+         } else{
+        $errMove="there was a problem moving the uploaded";
+         }
+        } else{
+         $errFile="File is too large";
+        }
+        }else{
+           $errUpload="There was error for uploading";
+         }
+         }else{
+        $errType= "Cannot upload files of this type. Only provide  jpg,png,jpeg";
+     }
+
+}
+
+?>
+
+<!-- Button to Open the Modal -->
+   <button type="button" class="btn btn-primary mb-5" data-bs-toggle="modal" data-bs-target="#createRecipeModal">
+   Create a New Recipe Category
+   </button>
+
+<!-- The Modal -->
+<div class="modal fade" id="createRecipeModal" tabindex="-1" aria-labelledby="createRecipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="createRecipeModalLabel">Create a New Recipe Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <!-- Modal Body (Form) -->
+      <div class="modal-body">
+
+      <form action="community_cookbook.php" method="post" enctype="multipart/form-data">
+
+        <div class="mb-3">
+            <label for="recipeTitle" class="form-label">Upload Your Recipe Image</label>
+            <input type="file" class="form-control" id="recipeimage" name="image" placeholder="Enter Recipe image" required>
+          </div>
+          <!-- Title Input -->
+          <div class="mb-3">
+            <label for="recipeTitle" class="form-label">Recipe Title</label>
+            <input type="text" class="form-control" id="recipeTitle" name="title" placeholder="Enter Recipe Title" required>
+          </div>
+
+          <!-- Ingredients Input -->
+          <div class="mb-3">
+            <label for="recipeIngredients" class="form-label">Ingredients</label>
+            <textarea class="form-control" id="recipeIngredients" name="ingredients" rows="3" placeholder="Enter Ingredients" required></textarea>
+          </div>
+
+          <!-- Steps Input -->
+          <div class="mb-3">
+            <label for="recipeSteps" class="form-label">Steps</label>
+            <textarea class="form-control" id="recipeSteps" name="steps" rows="3" placeholder="Enter Cooking Steps" required></textarea>
+          </div>
+
+          <!-- Cuisine Type Selection -->
+          <div class="mb-3">
+            <label for="cuisineType" class="form-label">Cuisine Type</label>
+            <input type="text" class="form-control" id="cuisine" name="cuisine" placeholder="Enter Cuisine" required>
+          </div>
+
+          <!-- Dietary Preferences Selection -->
+          <div class="mb-3">
+            <label for="dietaryPreferences" class="form-label">Dietary Preferences</label>
+            <input type="text" class="form-control" id="dietary" name="dietary" placeholder="Enter Dietary Preferences" required>
+          </div>
+
+          <!-- Difficulty Level Selection -->
+          <div class="mb-3">
+            <label for="difficultyLevel" class="form-label">Difficulty Level</label>
+            <select class="form-select" id="Level" name="level" required>
+              <option selected disabled value="">Choose Difficulty Level...</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" name="submit" class="btn btn-primary">Create Recipe Category</button>
+        </form>
+      </div>
+      
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="d-flex">
+<?php   
+
+$query = "
+    SELECT cr.*, u.first_name, u.last_name 
+    FROM community_recipes cr
+    JOIN users u ON cr.user_id = u.user_id";
+
+$result = mysqli_query($conn, $query);
+
+if (!$result) {
+    die('Error: ' . mysqli_error($conn));
+}
+
+      foreach($result as $index => $recipe){
+
+        $modalId = "recipeModal{$recipe['community_recipe_id']}";
+                           ?>
+
+<div class="col-md-3 mb-4">
+
+    <div class="card shadow-sm">
+        <img src="./upload/image/noodle.webp" class="card-img-top" alt="Recipe 1">
+        <div class="card-body">
+            <h5 class="card-title"><?php echo $recipe['title']   ?></h5>
+            <p class="card-text"><?php  echo $recipe['ingredients']?></p>
+           
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#<?php echo $modalId; ?>">
+  Read More
+  </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- The Modal -->
+<div class="modal fade" id="<?php echo $modalId; ?>" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="recipeModalLabel"><?php echo $recipe['title']   ?> Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <!-- Recipe Image -->
+        <img src="./upload/image/noodle.webp" class="img-fluid mb-3" alt="Recipe Image">
+        
+        <!-- Title -->
+        <h5 class="card-title"><?php echo $recipe['title']   ?></h5>
+        
+        <!-- Ingredients -->
+        <p class="card-text"><strong>Ingredients:</strong><?php echo $recipe['ingredients']   ?></p>
+        
+        <!-- Steps -->
+        <p class="card-text"><strong>Steps:</strong> <?php echo $recipe['steps']   ?></p>
+        
+        <!-- Cuisine Type -->
+        <p class="card-text"><strong>Cuisine Type:</strong> <?php echo $recipe['cuisine_type']   ?></p>
+        
+        <!-- Dietary Preferences -->
+        <p class="card-text"><strong>Dietary Preferences:</strong> <?php echo $recipe['dietary_preferences']   ?></p>
+        
+        <!-- Difficulty Level -->
+        <p class="card-text"><strong>Difficulty Level:</strong><?php echo $recipe['difficulty_level']   ?></p>
+        
+        <!-- User ID and Created At -->
+        <p class="card-text text-bg-danger "> Created by <strong class="text-white"> <?php echo $recipe['first_name']   ?><?php echo $recipe['last_name']   ?>  on created_date<?php echo $recipe['created_at']   ?></strong></p>
+      </div>
+      
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary">save</button>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<?php }?>
+</div>
+<?php
+
+include('./footer.php');
+?>
+
+https://fastercapital.com/keyword/culinary-experiences.html
+
+
+
+
+<?php
+
+
+session_start(); 
+include('./db.php');
+
+if (!isset($_SESSION['user_array'])) {
+  echo '<script type="text/javascript">';
+  echo 'alert("Oops! You need to log in to access this page. Redirecting to the homepage...");';
+  echo 'setTimeout(function(){ window.location.href = "index.php"; }, 1500);'; // 3-second delay before redirect
+  echo '</script>';
+    exit();
+
+    
+}
+
+
+
+include('./header.php'); 
+// Include this after session checks and redirections
+
+?>
+<?php
+if(isset($_POST['submit'])){
+  $image =$_FILES['image'];
+  $title=trim($_POST['title']);
+  $ingredients=trim($_POST['ingredients']);
+  $steps= trim($_POST['steps']);
+  $cuisine =trim($_POST['cuisine']);
+  $dietary=trim($_POST['dietary']);
+  $level=$_POST['level'];
+  $id = $_SESSION['user_array']['user_id'];
+
+  $imgName=$image['name'];
+  $imgTmp=$image['tmp_name'];
+  $imgSize=$image['size'];
+  $imgError=$image['error'];
+   $allow =['jpg','png','jpeg'];
+
+   $fileEx=strtolower(pathinfo($imgName,PATHINFO_EXTENSION));
+   if(in_array($fileEx,$allow)){
+       if($imgError===0){
+           if($imgSize<=1000000){
+               $newfilename = uniqid('',true).'.'.$fileEx;
+               $filename="upload/".basename($newfilename);
+               if(move_uploaded_file($imgTmp,$filename)){
+                $insertQuery="INSERT INTO community_recipes(image,title,ingredients,steps,cuisine_type,dietary_preferences,difficulty_level,user_id) 
+                VALUES ('$newfilename','$title','$ingredients','$steps','$cuisine','$dietary','$level','$id')";
+                $res= mysqli_query($conn,$insertQuery);
+         if($res==true){
+            echo '<script type="text/javascript">';
+            echo 'alert("Succcessfully Created");';
+            echo '</script>';
+         }else{
+         die('Error:'.mysqli_error($conn));
+         }
+         } else{
+        $errMove="there was a problem moving the uploaded";
+         }
+        } else{
+         $errFile="File is too large";
+        }
+        }else{
+           $errUpload="There was error for uploading";
+         }
+         }else{
+        $errType= "Cannot upload files of this type. Only provide  jpg,png,jpeg";
+     }
+
+}
+
+?>
+
+<!-- Button to Open the Modal -->
+   <button type="button" class="btn btn-primary mb-5" data-bs-toggle="modal" data-bs-target="#createRecipeModal">
+   Create a New Recipe Category
+   </button>
+
+<!-- The Modal -->
+<div class="modal fade" id="createRecipeModal" tabindex="-1" aria-labelledby="createRecipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="createRecipeModalLabel">Create a New Recipe Category</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <!-- Modal Body (Form) -->
+      <div class="modal-body">
+
+      <form action="community_cookbook.php" method="post" enctype="multipart/form-data">
+
+        <div class="mb-3">
+            <label for="recipeTitle" class="form-label">Upload Your Recipe Image</label>
+            <input type="file" class="form-control" id="recipeimage" name="image" placeholder="Enter Recipe image" required>
+          </div>
+          <!-- Title Input -->
+          <div class="mb-3">
+            <label for="recipeTitle" class="form-label">Recipe Title</label>
+            <input type="text" class="form-control" id="recipeTitle" name="title" placeholder="Enter Recipe Title" required>
+          </div>
+
+          <!-- Ingredients Input -->
+          <div class="mb-3">
+            <label for="recipeIngredients" class="form-label">Ingredients</label>
+            <textarea class="form-control" id="recipeIngredients" name="ingredients" rows="3" placeholder="Enter Ingredients" required></textarea>
+          </div>
+
+          <!-- Steps Input -->
+          <div class="mb-3">
+            <label for="recipeSteps" class="form-label">Steps</label>
+            <textarea class="form-control" id="recipeSteps" name="steps" rows="3" placeholder="Enter Cooking Steps" required></textarea>
+          </div>
+
+          <!-- Cuisine Type Selection -->
+          <div class="mb-3">
+            <label for="cuisineType" class="form-label">Cuisine Type</label>
+            <input type="text" class="form-control" id="cuisine" name="cuisine" placeholder="Enter Cuisine" required>
+          </div>
+
+          <!-- Dietary Preferences Selection -->
+          <div class="mb-3">
+            <label for="dietaryPreferences" class="form-label">Dietary Preferences</label>
+            <input type="text" class="form-control" id="dietary" name="dietary" placeholder="Enter Dietary Preferences" required>
+          </div>
+
+          <!-- Difficulty Level Selection -->
+          <div class="mb-3">
+            <label for="difficultyLevel" class="form-label">Difficulty Level</label>
+            <select class="form-select" id="Level" name="level" required>
+              <option selected disabled value="">Choose Difficulty Level...</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" name="submit" class="btn btn-primary">Create Recipe Category</button>
+        </form>
+      </div>
+      
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="d-flex">
+<?php   
+
+$query = "
+    SELECT cr.*, u.first_name, u.last_name 
+    FROM community_recipes cr
+    JOIN users u ON cr.user_id = u.user_id";
+
+$result = mysqli_query($conn, $query);
+
+if (!$result) {
+    die('Error: ' . mysqli_error($conn));
+}
+
+      foreach($result as $index => $recipe){
+
+        $modalId = "recipeModal{$recipe['community_recipe_id']}";
+                           ?>
+
+<div class="col-md-3 mb-4">
+
+    <div class="card shadow-sm">
+        <img src="./upload/image/noodle.webp" class="card-img-top" alt="Recipe 1">
+        <div class="card-body">
+            <h5 class="card-title"><?php echo $recipe['title']   ?></h5>
+            <p class="card-text"><?php  echo $recipe['ingredients']?></p>
+           
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#<?php echo $modalId; ?>">
+  Read More
+  </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- The Modal -->
+<div class="modal fade" id="<?php echo $modalId; ?>" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="recipeModalLabel"><?php echo $recipe['title']   ?> Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <!-- Recipe Image -->
+        <img src="./upload/image/noodle.webp" class="img-fluid mb-3" alt="Recipe Image">
+        
+        <!-- Title -->
+        <h5 class="card-title"><?php echo $recipe['title']   ?></h5>
+        
+        <!-- Ingredients -->
+        <p class="card-text"><strong>Ingredients:</strong><?php echo $recipe['ingredients']   ?></p>
+        
+        <!-- Steps -->
+        <p class="card-text"><strong>Steps:</strong> <?php echo $recipe['steps']   ?></p>
+        
+        <!-- Cuisine Type -->
+        <p class="card-text"><strong>Cuisine Type:</strong> <?php echo $recipe['cuisine_type']   ?></p>
+        
+        <!-- Dietary Preferences -->
+        <p class="card-text"><strong>Dietary Preferences:</strong> <?php echo $recipe['dietary_preferences']   ?></p>
+        
+        <!-- Difficulty Level -->
+        <p class="card-text"><strong>Difficulty Level:</strong><?php echo $recipe['difficulty_level']   ?></p>
+        
+        <!-- User ID and Created At -->
+        <p class="card-text text-bg-danger "> Created by <strong class="text-white"> <?php echo $recipe['first_name']   ?><?php echo $recipe['last_name']   ?>  on created_date<?php echo $recipe['created_at']   ?></strong></p>
+      </div>
+      
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary">save</button>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<?php }?>
+</div>
+<?php
+
+include('./footer.php');
+?>
+

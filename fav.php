@@ -3,51 +3,7 @@
 include('./header.php')
 
 ?>
-<div class="container-fluid">
-        <nav class="navbar navbar-expand-lg  bg-dark ">
-          <a class="navbar-brand" href="index.php">
-            <span>
-              Feane
-            </span>
-          </a>
-
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class=""> </span>
-          </button>
-
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav  mx-auto ">
-              <li class="nav-item ">
-                <a class="nav-link text-white " href="index.php">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link  text-white " href="">Culinary Rescources</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white " href="recipe.php">Recipe Collection</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white " href="community_cookbook.php">Community Cookbook</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-white " href="">Contact Us</a>
-              </li>
-            
-          
-
-            </ul>
-            <?php
-if (isset($_SESSION['user_array'])) {
-    ?>
-    <button type="button" class="btn" onclick="location.href='viewProfile.php?view_id=<?php echo $_SESSION['user_array']['user_id'] ?>'">
-        <img src="./upload/<?php echo  $_SESSION['user_array']['image']  ?>" width="80" height="80" class="rounded-circle pe-auto" alt="profile">
-    </button>
-    <?php
-}
-?>
-          </div>
-        </nav>
-      </div>
+<!-- Navbar Section -->
 
 
       <?php
@@ -86,6 +42,7 @@ if (!$result) {
             $query2 = "SELECT * FROM recipes WHERE recipe_id = '$recipe_id'";
             $result2 = mysqli_query($conn, $query2);
             $recipe = mysqli_fetch_assoc($result2);
+          if($recipe){
             ?>
          <div class="col-md-4 mb-4">
             <div class="card h-100 shadow-sm">
@@ -110,7 +67,7 @@ if (!$result) {
             </div>
         </div>
             <?php
-        }
+        }}
         } else {
          
             echo '<div class="alert alert-danger text-center" role="alert">
